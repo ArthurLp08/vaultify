@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { KeyRound, Settings, ShieldCheck, X } from "lucide-react";
+import { useProfile } from "@/lib/profile";
 
 const NAV_ITEMS = [
   { label: "Minhas Senhas", icon: KeyRound, href: "/passwords" },
-  { label: "Configurações", icon: Settings },
+  { label: "Configurações", icon: Settings, href: "/settings" },
 ];
 
 const itemClassName =
@@ -21,6 +22,7 @@ type SidebarContentProps = {
 
 export function SidebarContent({ onClose }: SidebarContentProps) {
   const pathname = usePathname();
+  const profile = useProfile();
 
   return (
     <div className="flex flex-1 flex-col gap-8 overflow-y-auto p-4">
@@ -73,17 +75,21 @@ export function SidebarContent({ onClose }: SidebarContentProps) {
         })}
       </nav>
 
-      <div className="mt-auto flex items-center gap-3 rounded-lg border border-border bg-card p-3">
+      <Link
+        href="/settings"
+        onClick={onClose}
+        className="mt-auto flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors duration-200 hover:bg-hover"
+      >
         <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">
-          V
+          {profile.name.charAt(0).toUpperCase()}
         </span>
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-sm font-medium text-foreground">
-            Guest User
+            {profile.name}
           </span>
-          <span className="truncate text-xs text-muted">guest@vaultify.dev</span>
+          <span className="truncate text-xs text-muted">{profile.email}</span>
         </div>
-      </div>
+      </Link>
     </div>
   );
 }
