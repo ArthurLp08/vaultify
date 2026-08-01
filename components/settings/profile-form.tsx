@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check } from "lucide-react";
+import { Button } from "@/components/button/button";
 import { Input } from "@/components/input/input";
 import { SettingsSection } from "./settings-section";
 import { updateProfile, useProfile } from "@/lib/profile";
@@ -31,6 +32,7 @@ export function ProfileForm() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Input
           label="Nome"
+          variant="card"
           value={name}
           onChange={(event) => {
             setName(event.target.value);
@@ -38,15 +40,10 @@ export function ProfileForm() {
           }}
           placeholder="Seu nome"
         />
-        <Input label="E-mail" value={profile.email} readOnly />
+        <Input label="E-mail" variant="card" value={profile.email} readOnly />
 
         <div className="flex items-center gap-3">
-          <button
-            type="submit"
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-background transition-colors duration-200 hover:bg-primary/90"
-          >
-            Salvar alterações
-          </button>
+          <Button type="submit">Salvar alterações</Button>
           {saved && (
             <span className="flex items-center gap-1.5 text-sm text-muted">
               <Check className="size-4 text-primary" />

@@ -27,13 +27,14 @@ export function PasswordList({ onEdit }: PasswordListProps) {
       <SearchInput value={query} onChange={setQuery} placeholder="Buscar senhas..." />
 
       {filteredPasswords.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredPasswords.map((item) => (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3 lg:gap-6">
+          {filteredPasswords.map((item, index) => (
             <PasswordCard
               key={item.id}
               site={item.site}
               username={item.username}
               password={item.password}
+              delay={Math.min(index * 0.04, 0.3)}
               onEdit={() => onEdit(item)}
               onDelete={() => handleDelete(item.id)}
             />

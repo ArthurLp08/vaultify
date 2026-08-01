@@ -26,7 +26,7 @@ export function Input({
       <div className="relative">
         <input
           id={inputId}
-          className={`h-10 w-full rounded-lg border border-border ${backgroundClassName} px-3 text-sm text-foreground placeholder:text-muted transition-colors duration-200 focus:border-primary focus:outline-none read-only:cursor-not-allowed read-only:opacity-70 ${className}`}
+          className={`h-10 w-full rounded-lg border border-border ${backgroundClassName} px-3 text-sm text-foreground placeholder:text-muted/70 transition duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none read-only:cursor-not-allowed read-only:opacity-70 ${className}`}
           {...props}
         />
         {suffix && (

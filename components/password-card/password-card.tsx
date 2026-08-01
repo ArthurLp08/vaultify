@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Check, Copy, Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
+import { Button } from "@/components/button/button";
 
 type PasswordCardProps = {
   site: string;
@@ -9,10 +11,8 @@ type PasswordCardProps = {
   password: string;
   onEdit?: () => void;
   onDelete?: () => void;
+  delay?: number;
 };
-
-const iconButtonClassName =
-  "grid size-8 place-items-center rounded-lg text-muted transition-colors duration-200 hover:bg-hover hover:text-foreground";
 
 export function PasswordCard({
   site,
@@ -20,6 +20,7 @@ export function PasswordCard({
   password,
   onEdit,
   onDelete,
+  delay = 0,
 }: PasswordCardProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -38,7 +39,13 @@ export function PasswordCard({
   };
 
   return (
-    <article className="rounded-lg border border-border bg-card p-4 transition-colors duration-200 hover:bg-hover">
+    <motion.article
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -3, scale: 1.01 }}
+      transition={{ duration: 0.2, ease: "easeOut", delay }}
+      className="rounded-lg border border-border bg-card p-4 shadow-card transition-[background-color,box-shadow] duration-200 hover:border-border/70 hover:bg-hover hover:shadow-card-hover"
+    >
       <div className="flex items-center gap-3">
         <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">
           {site.charAt(0).toUpperCase()}
@@ -48,8 +55,10 @@ export function PasswordCard({
           {site}
         </h2>
 
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onMouseDown={reveal}
           onMouseUp={hide}
           onMouseLeave={hide}
@@ -66,14 +75,13 @@ export function PasswordCard({
           }}
           onContextMenu={(event) => event.preventDefault()}
           aria-label={showPassword ? "Ocultar senha" : "Ver senha"}
-          className={iconButtonClassName}
         >
           {showPassword ? (
             <EyeOff className="size-4" />
           ) : (
             <Eye className="size-4" />
           )}
-        </button>
+        </Button>
       </div>
 
       <div className="mt-4 flex flex-col gap-1">
@@ -84,35 +92,38 @@ export function PasswordCard({
       </div>
 
       <div className="mt-4 flex items-center gap-1 border-t border-border pt-3">
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={onEdit}
           aria-label="Editar"
-          className={iconButtonClassName}
         >
           <Pencil className="size-4" />
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={handleCopy}
           aria-label="Copiar senha"
-          className={iconButtonClassName}
         >
           {copied ? (
             <Check className="size-4 text-primary" />
           ) : (
             <Copy className="size-4" />
           )}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={onDelete}
           aria-label="Deletar"
-          className={iconButtonClassName}
         >
           <Trash2 className="size-4" />
-        </button>
+        </Button>
       </div>
-    </article>
+    </motion.article>
   );
 }

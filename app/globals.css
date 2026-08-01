@@ -24,6 +24,10 @@
   --radius-lg: var(--radius);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
+  --shadow-card-hover: 0 2px 8px rgb(0 0 0 / 0.3), 0 12px 28px rgb(0 0 0 / 0.4);
+  --shadow-modal: 0 8px 28px rgb(0 0 0 / 0.45), 0 24px 56px rgb(0 0 0 / 0.5);
+  --shadow-sidebar: 4px 0 24px rgb(0 0 0 / 0.35);
 }
 
 @layer base {
@@ -37,11 +41,52 @@
 
   html {
     color-scheme: dark;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
   }
 
   body {
     background: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans), sans-serif;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  }
+
+  :where(button, a, [role="button"], [role="tab"], summary):focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-primary) 65%, transparent);
+    outline-offset: 2px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border: 2px solid var(--color-background);
+    border-radius: 8px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-hover);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

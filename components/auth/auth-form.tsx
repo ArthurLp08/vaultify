@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import { ShieldCheck } from "lucide-react";
+import { Button } from "@/components/button/button";
 import { Input } from "@/components/input/input";
 import { PasswordInput } from "@/components/password-input/password-input";
 
@@ -13,8 +15,10 @@ type Message = {
   text: string;
 } | null;
 
-const toggleClassName =
-  "flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors duration-200";
+const tabs: { mode: Mode; label: string }[] = [
+  { mode: "login", label: "Entrar" },
+  { mode: "signup", label: "Criar conta" },
+];
 
 export function AuthForm() {
   const router = useRouter();
@@ -46,9 +50,14 @@ export function AuthForm() {
   };
 
   return (
-    <div className="w-full max-w-md rounded-lg border border-border bg-card p-6">
+    <motion.div
+      initial={{ opacity: 0, y: 12, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className="w-full max-w-2xl rounded-lg border border-border bg-card p-6 shadow-card"
+    >
       <div className="flex flex-col items-center gap-2">
-        <span className="grid size-11 place-items-center rounded-lg bg-primary text-background">
+        <span className="grid size-11 place-items-center rounded-lg bg-primary text-background shadow-sm shadow-primary/30">
           <ShieldCheck className="size-5" />
         </span>
         <h1 className="text-lg font-semibold tracking-tight text-foreground">
@@ -64,89 +73,128 @@ export function AuthForm() {
       <div
         role="tablist"
         aria-label="Modo de acesso"
-        className="mt-6 flex gap-1 rounded-lg bg-background p-1"
+        className="mt-6 grid grid-cols-2 gap-1 rounded-lg bg-background p-1"
       >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === "login"}
-          onClick={() => handleModeChange("login")}
-          className={`${toggleClassName} ${mode === "login" ? "bg-primary text-background" : "text-muted hover:text-foreground"}`}
-        >
-          Entrar
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={isSignup}
-          onClick={() => handleModeChange("signup")}
-          className={`${toggleClassName} ${isSignup ? "bg-primary text-background" : "text-muted hover:text-foreground"}`}
-        >
-          Criar conta
-        </button>
+        {tabs.map(({ mode: tabMode, label }) => {
+          const isSelected = mode === tabMode;
+
+          return (
+            <button
+              key={tabMode}
+              type="button"
+              role="tab"
+              aria-selected={isSelected}
+              onClick={() => handleModeChange(tabMode)}
+              className={`relative rounded-md px-4 py-2 text-sm font-medium transition-colors duration-200 ${isSelected ? "text-background" : "text-muted hover:text-foreground"}`}
+            >
+              {isSelected && (
+                <motion.span
+                  layoutId="auth-tab-pill"
+                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  className="absolute inset-0 rounded-md bg-primary"
+                />
+              )}
+              <span className="relative">{label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-        {isSignup && (
+      <motion.form onSubmit={handleSubmit} className="mt-6 flex flex-col">
+        <AnimatePresence initial={false}>
+          {isSignup && (
+            <motion.div
+              key="name-field"
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <Input
+                label="Nome"
+                variant="card"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Seu nome"
+                autoFocus
+                required
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="mb-4">
           <Input
-            label="Nome"
+            label="E-mail"
+            type="email"
             variant="card"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Seu nome"
-            autoFocus
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="voce@email.com"
+            autoFocus={!isSignup}
             required
           />
-        )}
+        </div>
 
-        <Input
-          label="E-mail"
-          type="email"
-          variant="card"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="voce@email.com"
-          autoFocus={!isSignup}
-          required
-        />
-
-        <PasswordInput
-          label="Senha"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="••••••••"
-          required
-        />
-
-        {isSignup && (
+        <div className="mb-4">
           <PasswordInput
-            label="Confirmar senha"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
+            label="Senha"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
             placeholder="••••••••"
             required
           />
-        )}
+        </div>
 
-        {message && (
-          <p
-            className={
-              message.type === "error"
-                ? "text-sm text-red-400"
-                : "text-sm text-primary"
-            }
-          >
-            {message.text}
-          </p>
-        )}
+        <AnimatePresence initial={false}>
+          {isSignup && (
+            <motion.div
+              key="confirm-field"
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <PasswordInput
+                label="Confirmar senha"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                placeholder="••••••••"
+                required
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <button
-          type="submit"
-          className="mt-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-background transition-colors duration-200 hover:bg-primary/90"
-        >
+        <AnimatePresence initial={false}>
+          {message && (
+            <motion.div
+              key={message.text}
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <p
+                className={
+                  message.type === "error"
+                    ? "text-sm text-red-400"
+                    : "text-sm text-primary"
+                }
+              >
+                {message.text}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <Button type="submit">
           {isSignup ? "Criar conta" : "Entrar"}
-        </button>
-      </form>
-    </div>
+        </Button>
+      </motion.form>
+    </motion.div>
   );
 }

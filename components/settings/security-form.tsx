@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/button/button";
 import { Input } from "@/components/input/input";
 import { SettingsSection } from "./settings-section";
 
@@ -38,6 +39,7 @@ export function SecurityForm() {
         <Input
           label="Senha atual"
           type="password"
+          variant="card"
           value={currentPassword}
           onChange={(event) => setCurrentPassword(event.target.value)}
           required
@@ -45,6 +47,7 @@ export function SecurityForm() {
         <Input
           label="Nova senha"
           type="password"
+          variant="card"
           value={newPassword}
           onChange={(event) => setNewPassword(event.target.value)}
           required
@@ -52,6 +55,7 @@ export function SecurityForm() {
         <Input
           label="Confirmar nova senha"
           type="password"
+          variant="card"
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
           required
@@ -70,12 +74,7 @@ export function SecurityForm() {
         )}
 
         <div>
-          <button
-            type="submit"
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-background transition-colors duration-200 hover:bg-primary/90"
-          >
-            Alterar senha
-          </button>
+          <Button type="submit">Alterar senha</Button>
         </div>
       </form>
     </SettingsSection>
