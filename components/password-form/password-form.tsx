@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, X } from "lucide-react";
+import { X } from "lucide-react";
+import { Input } from "@/components/input/input";
+import { PasswordInput } from "@/components/password-input/password-input";
 import { savePasswords, usePasswords, type PasswordItem } from "@/lib/passwords";
 
 type PasswordFormDialogProps = {
   initialData: PasswordItem | null;
   onClose: () => void;
 };
-
-const inputClassName =
-  "h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted transition-colors duration-200 focus:border-primary focus:outline-none";
 
 export function PasswordFormDialog({
   initialData,
@@ -22,7 +21,6 @@ export function PasswordFormDialog({
   const [site, setSite] = useState(initialData?.site ?? "");
   const [username, setUsername] = useState(initialData?.username ?? "");
   const [password, setPassword] = useState(initialData?.password ?? "");
-  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -88,74 +86,35 @@ export function PasswordFormDialog({
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           {!isEditing && (
             <>
-              <div className="flex flex-col gap-2">
-                <label htmlFor="site" className="text-sm font-medium text-foreground">
-                  Site
-                </label>
-                <input
-                  id="site"
-                  type="text"
-                  autoFocus
-                  value={site}
-                  onChange={(event) => setSite(event.target.value)}
-                  placeholder="ex.: github.com"
-                  required
-                  className={inputClassName}
-                />
-              </div>
+              <Input
+                label="Site"
+                variant="card"
+                value={site}
+                onChange={(event) => setSite(event.target.value)}
+                placeholder="ex.: github.com"
+                autoFocus
+                required
+              />
 
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="username"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Usuário
-                </label>
-                <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(event) => setUsername(event.target.value)}
-                  placeholder="ex.: usuario@email.com"
-                  required
-                  className={inputClassName}
-                />
-              </div>
+              <Input
+                label="Usuário"
+                variant="card"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                placeholder="ex.: usuario@email.com"
+                required
+              />
             </>
           )}
 
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="password"
-              className="text-sm font-medium text-foreground"
-            >
-              Senha
-            </label>
-            <div className="relative">
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="••••••••"
-                required
-                autoFocus={isEditing}
-                className={`${inputClassName} pr-10`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((value) => !value)}
-                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                className="absolute right-1 top-1 grid size-8 place-items-center rounded-lg text-muted transition-colors duration-200 hover:bg-hover hover:text-foreground"
-              >
-                {showPassword ? (
-                  <EyeOff className="size-4" />
-                ) : (
-                  <Eye className="size-4" />
-                )}
-              </button>
-            </div>
-          </div>
+          <PasswordInput
+            label="Senha"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="••••••••"
+            autoFocus={isEditing}
+            required
+          />
 
           <div className="mt-2 flex justify-end gap-3">
             <button
