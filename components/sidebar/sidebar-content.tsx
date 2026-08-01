@@ -24,7 +24,9 @@ type SidebarContentProps = {
 
 export function SidebarContent({ onClose }: SidebarContentProps) {
   const pathname = usePathname();
-  const profile = useProfile();
+  const { profile } = useProfile();
+  const name = profile?.name ?? "";
+  const email = profile?.email ?? "";
 
   return (
     <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
@@ -80,13 +82,13 @@ export function SidebarContent({ onClose }: SidebarContentProps) {
         className="mt-auto flex items-center gap-3 rounded-lg border border-border bg-card p-3 shadow-card transition-colors duration-200 hover:border-border/70 hover:bg-hover"
       >
         <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">
-          {profile.name.charAt(0).toUpperCase()}
+          {(name.charAt(0) || "V").toUpperCase()}
         </span>
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-sm font-medium text-foreground">
-            {profile.name}
+            {name || "Seu perfil"}
           </span>
-          <span className="truncate text-xs text-muted">{profile.email}</span>
+          <span className="truncate text-xs text-muted">{email}</span>
         </div>
       </Link>
     </div>

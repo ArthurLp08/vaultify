@@ -6,7 +6,12 @@ import { X } from "lucide-react";
 import { Button } from "@/components/button/button";
 import { Input } from "@/components/input/input";
 import { PasswordInput } from "@/components/password-input/password-input";
-import { savePasswords, usePasswords, type PasswordItem } from "@/lib/passwords";
+import { getErrorMessage } from "@/lib/errors";
+import {
+  createPassword,
+  updatePassword,
+  type PasswordItem,
+} from "@/lib/passwords";
 
 type PasswordFormDialogProps = {
   initialData: PasswordItem | null;
@@ -17,12 +22,13 @@ export function PasswordFormDialog({
   initialData,
   onClose,
 }: PasswordFormDialogProps) {
-  const passwords = usePasswords();
   const isEditing = initialData !== null;
 
   const [site, setSite] = useState(initialData?.site ?? "");
   const [username, setUsername] = useState(initialData?.username ?? "");
   const [password, setPassword] = useState(initialData?.password ?? "");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -33,25 +39,27 @@ export function PasswordFormDialog({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitting(true);
+    setError(null);
 
-    const next: PasswordItem[] = isEditing
-      ? passwords.map((item) =>
-          item.id === initialData.id ? { ...item, password } : item
-        )
-      : [
-          ...passwords,
-          {
-            id: crypto.randomUUID(),
-            site,
-            username,
-            password,
-          },
-        ];
+    try {
+      if (isEditing && initialData) {
+        await updatePassword(initialData.id, {
+          site: initialData.site,
+          username: initialData.username,
+          password,
+        });
+      } else {
+        await createPassword({ site, username, password });
+      }
 
-    savePasswords(next);
-    onClose();
+      onClose();
+    } catch (err) {
+      setError(getErrorMessage(err));
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -126,12 +134,18 @@ export function PasswordFormDialog({
             required
           />
 
+          {error && <p className="text-sm text-red-400">{error}</p>}
+
           <div className="mt-2 flex justify-end gap-3">
             <Button type="button" variant="secondary" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit">
-              {isEditing ? "Salvar alterações" : "Adicionar"}
+            <Button type="submit" disabled={submitting}>
+              {submitting
+                ? "Salvando..."
+                : isEditing
+                  ? "Salvar alterações"
+                  : "Adicionar"}
             </Button>
           </div>
         </form>

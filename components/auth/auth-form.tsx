@@ -3,10 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/button/button";
 import { Input } from "@/components/input/input";
 import { PasswordInput } from "@/components/password-input/password-input";
+import { createVaultKey, unlockVaultKey } from "@/lib/crypto";
+import { getErrorMessage } from "@/lib/errors";
+import { fetchVaultConfig, saveVaultConfig } from "@/lib/profile";
+import { createClient } from "@/lib/supabase/client";
+import { storeVaultKey } from "@/lib/vault-key";
 
 type Mode = "login" | "signup";
 
@@ -28,10 +33,11 @@ export function AuthForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState<Message>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const isSignup = mode === "signup";
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (isSignup && password !== confirmPassword) {
@@ -39,7 +45,52 @@ export function AuthForm() {
       return;
     }
 
-    router.push("/passwords");
+    setSubmitting(true);
+    setMessage(null);
+
+    const supabase = createClient();
+
+    try {
+      if (isSignup) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { name } },
+        });
+
+        if (error) throw new Error(error.message);
+        if (!data.user) {
+          throw new Error(
+            "Confirmação de e-mail necessária. Verifique sua caixa de entrada."
+          );
+        }
+
+        const vault = await createVaultKey(password);
+        await saveVaultConfig({ salt: vault.salt, wrapped: vault.wrapped });
+        await storeVaultKey(vault.dek);
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw new Error(error.message);
+
+        const config = await fetchVaultConfig();
+        if (!config) {
+          throw new Error("Cofre não configurado para esta conta.");
+        }
+
+        const dek = await unlockVaultKey(password, config.salt, config.wrapped);
+        await storeVaultKey(dek);
+      }
+
+      router.push("/passwords");
+      router.refresh();
+    } catch (error) {
+      console.error("Auth error:", error);
+      setMessage({ type: "error", text: getErrorMessage(error) });
+      setSubmitting(false);
+    }
   };
 
   const handleModeChange = (next: Mode) => {
@@ -191,8 +242,17 @@ export function AuthForm() {
           )}
         </AnimatePresence>
 
-        <Button type="submit">
-          {isSignup ? "Criar conta" : "Entrar"}
+        <Button type="submit" disabled={submitting}>
+          {submitting ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              {isSignup ? "Criando conta..." : "Entrando..."}
+            </>
+          ) : isSignup ? (
+            "Criar conta"
+          ) : (
+            "Entrar"
+          )}
         </Button>
       </motion.form>
     </motion.div>

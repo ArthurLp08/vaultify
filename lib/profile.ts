@@ -1,61 +1,133 @@
-import { useSyncExternalStore } from "react";
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export type Profile = {
   name: string;
   email: string;
 };
 
-const DEFAULT_PROFILE: Profile = {
-  name: "Guest User",
-  email: "guest@vaultify.dev",
+export type ProfileState = {
+  profile: Profile | null;
+  loading: boolean;
+  refresh: () => void;
 };
 
-const STORAGE_KEY = "vaultify-profile";
+export type VaultConfig = {
+  salt: string;
+  wrapped: string;
+};
 
-function readStoredProfile(): Profile {
-  const stored = localStorage.getItem(STORAGE_KEY);
-
-  if (stored === null) {
-    return DEFAULT_PROFILE;
-  }
-
-  try {
-    return { ...DEFAULT_PROFILE, ...JSON.parse(stored) };
-  } catch {
-    return DEFAULT_PROFILE;
-  }
+async function currentUserId(): Promise<string | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.id ?? null;
 }
 
-let cache: Profile =
-  typeof window === "undefined" ? DEFAULT_PROFILE : readStoredProfile();
+export async function fetchProfile(): Promise<Profile | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-const listeners = new Set<() => void>();
+  if (!user) return null;
 
-function emitChange() {
-  listeners.forEach((listener) => listener());
-}
+  const { data } = await supabase
+    .from("profiles")
+    .select("name")
+    .eq("id", user.id)
+    .single();
 
-export function subscribeProfile(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
+  return {
+    name: data?.name ?? user.user_metadata?.name ?? "",
+    email: user.email ?? "",
   };
 }
 
-export function getProfile(): Profile {
-  return cache;
+export async function fetchVaultConfig(): Promise<VaultConfig | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("salt, wrapped_key")
+    .eq("id", user.id)
+    .single();
+
+  if (!data?.salt || !data.wrapped_key) return null;
+
+  return { salt: data.salt, wrapped: data.wrapped_key };
 }
 
-export function useProfile(): Profile {
-  return useSyncExternalStore(
-    subscribeProfile,
-    getProfile,
-    () => DEFAULT_PROFILE
-  );
+export function useProfile(): ProfileState {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [version, setVersion] = useState(0);
+
+  const refresh = useCallback(() => setVersion((v) => v + 1), []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      const next = await fetchProfile();
+      if (!cancelled) {
+        setProfile(next);
+        setLoading(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [version]);
+
+  return { profile, loading, refresh };
 }
 
-export function updateProfile(profile: Profile): void {
-  cache = profile;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-  emitChange();
+export async function updateProfileName(name: string): Promise<void> {
+  const id = await currentUserId();
+  if (!id) throw new Error("Sessão expirada. Entre novamente.");
+
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ name })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function updateVaultWrappedKey(wrapped: string): Promise<void> {
+  const id = await currentUserId();
+  if (!id) throw new Error("Sessão expirada. Entre novamente.");
+
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ wrapped_key: wrapped })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function saveVaultConfig(config: VaultConfig): Promise<void> {
+  const id = await currentUserId();
+  if (!id) throw new Error("Sessão expirada. Entre novamente.");
+
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .upsert({ id, salt: config.salt, wrapped_key: config.wrapped });
+
+  if (error) throw new Error(error.message);
 }

@@ -5,23 +5,39 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/button/button";
 import { Input } from "@/components/input/input";
 import { SettingsSection } from "./settings-section";
-import { updateProfile, useProfile } from "@/lib/profile";
+import { getErrorMessage } from "@/lib/errors";
+import { updateProfileName, useProfile } from "@/lib/profile";
 
 export function ProfileForm() {
-  const profile = useProfile();
-  const [name, setName] = useState(profile.name);
-  const [lastProfileName, setLastProfileName] = useState(profile.name);
+  const { profile, loading, refresh } = useProfile();
+  const [name, setName] = useState("");
+  const [lastProfileName, setLastProfileName] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  if (profile.name !== lastProfileName) {
+  if (profile && profile.name !== lastProfileName) {
     setLastProfileName(profile.name);
     setName(profile.name);
   }
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    updateProfile({ ...profile, name });
-    setSaved(true);
+    if (!profile) return;
+
+    setSubmitting(true);
+    setSaved(false);
+    setError(null);
+
+    try {
+      await updateProfileName(name);
+      refresh();
+      setSaved(true);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -39,11 +55,24 @@ export function ProfileForm() {
             setSaved(false);
           }}
           placeholder="Seu nome"
+          disabled={loading}
         />
-        <Input label="E-mail" variant="card" value={profile.email} readOnly />
+        <Input
+          label="E-mail"
+          variant="card"
+          value={profile?.email ?? ""}
+          readOnly
+        />
+
+        {error && <p className="text-sm text-red-400">{error}</p>}
 
         <div className="flex items-center gap-3">
-          <Button type="submit">Salvar alterações</Button>
+          <Button
+            type="submit"
+            disabled={submitting || loading || !profile}
+          >
+            {submitting ? "Salvando..." : "Salvar alterações"}
+          </Button>
           {saved && (
             <span className="flex items-center gap-1.5 text-sm text-muted">
               <Check className="size-4 text-primary" />

@@ -1,9 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/button/button";
-import { Input } from "@/components/input/input";
+import { PasswordInput } from "@/components/password-input/password-input";
 import { SettingsSection } from "./settings-section";
+import { rewrapVaultKey, verifyVaultPassword } from "@/lib/crypto";
+import { getErrorMessage } from "@/lib/errors";
+import { fetchVaultConfig, updateVaultWrappedKey } from "@/lib/profile";
+import { createClient } from "@/lib/supabase/client";
+import { getVaultKey } from "@/lib/vault-key";
 
 type Message = {
   type: "error" | "success";
@@ -15,19 +21,65 @@ export function SecurityForm() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState<Message>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitting(true);
+    setMessage(null);
 
     if (newPassword !== confirmPassword) {
       setMessage({ type: "error", text: "As senhas não coincidem." });
+      setSubmitting(false);
       return;
     }
 
-    setMessage({ type: "success", text: "Senha alterada com sucesso." });
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
+    const dek = getVaultKey();
+    if (!dek) {
+      setMessage({
+        type: "error",
+        text: "Cofre bloqueado. Entre novamente para continuar.",
+      });
+      setSubmitting(false);
+      return;
+    }
+
+    const supabase = createClient();
+
+    try {
+      const config = await fetchVaultConfig();
+      if (!config) {
+        throw new Error("Cofre não configurado para esta conta.");
+      }
+
+      const currentPasswordValid = await verifyVaultPassword(
+        currentPassword,
+        config.salt,
+        config.wrapped,
+        dek
+      );
+      if (!currentPasswordValid) {
+        throw new Error("Senha atual incorreta.");
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (error) throw new Error(error.message);
+
+      const wrapped = await rewrapVaultKey(dek, newPassword, config.salt);
+      await updateVaultWrappedKey(wrapped);
+
+      setMessage({ type: "success", text: "Senha alterada com sucesso." });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      console.error("Password change error:", error);
+      setMessage({ type: "error", text: getErrorMessage(error) });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -36,26 +88,20 @@ export function SecurityForm() {
       description="Gerencie a senha da sua conta."
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Input
+        <PasswordInput
           label="Senha atual"
-          type="password"
-          variant="card"
           value={currentPassword}
           onChange={(event) => setCurrentPassword(event.target.value)}
           required
         />
-        <Input
+        <PasswordInput
           label="Nova senha"
-          type="password"
-          variant="card"
           value={newPassword}
           onChange={(event) => setNewPassword(event.target.value)}
           required
         />
-        <Input
+        <PasswordInput
           label="Confirmar nova senha"
-          type="password"
-          variant="card"
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
           required
@@ -74,7 +120,16 @@ export function SecurityForm() {
         )}
 
         <div>
-          <Button type="submit">Alterar senha</Button>
+          <Button type="submit" disabled={submitting}>
+            {submitting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Alterando...
+              </>
+            ) : (
+              "Alterar senha"
+            )}
+          </Button>
         </div>
       </form>
     </SettingsSection>
